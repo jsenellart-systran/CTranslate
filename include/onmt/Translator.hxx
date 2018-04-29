@@ -147,7 +147,8 @@ namespace onmt
                                                         size_t beam_size,
                                                         bool cuda,
                                                         bool qlinear,
-                                                        bool profiling)
+                                                        bool profiling,
+                                                        size_t cache_emblin)
     : _profiling(profiling)
     , _profiler(profiling, true)
     , _model(new Model<MatFwd, MatIn, MatEmb, ModelT>(model))
@@ -155,10 +156,11 @@ namespace onmt
     , _subdict(new SubDict(vocab_mapping, _model->get_tgt_dict()))
     , _cuda(cuda)
     , _qlinear(qlinear)
+    , _cache_emblin(cache_emblin)
     , _replace_unk(replace_unk)
     , _max_sent_length(max_sent_length)
     , _beam_size(beam_size)
-    , _factory(_profiler, cuda, qlinear)
+    , _factory(_profiler, cuda, qlinear, cache_emblin)
   {
     init_graph();
     _profiler.stop("Initialization");
@@ -174,10 +176,11 @@ namespace onmt
     , _subdict(other._subdict)
     , _cuda(other._cuda)
     , _qlinear(other._qlinear)
+    , _cache_emblin(other._cache_emblin)
     , _replace_unk(other._replace_unk)
     , _max_sent_length(other._max_sent_length)
     , _beam_size(other._beam_size)
-    , _factory(_profiler, _cuda, _qlinear)
+    , _factory(_profiler, _cuda, _qlinear, _cache_emblin)
   {
     init_graph();
     _profiler.stop("Initialization");

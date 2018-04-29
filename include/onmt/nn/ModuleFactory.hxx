@@ -42,10 +42,11 @@ namespace onmt
 
 
     template <typename MatFwd, typename MatIn, typename MatEmb, typename ModelT>
-    ModuleFactory<MatFwd, MatIn, MatEmb, ModelT>::ModuleFactory(Profiler& profiler, bool cuda, bool qlinear)
+    ModuleFactory<MatFwd, MatIn, MatEmb, ModelT>::ModuleFactory(Profiler& profiler, bool cuda, bool qlinear, size_t cache_emblin)
       : _profiler(profiler)
       , _cuda(cuda)
       , _qlinear(qlinear)
+      , _cache_emblin(cache_emblin)
     {
       if (_cuda)
       {

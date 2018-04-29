@@ -11,7 +11,8 @@ namespace onmt
                                                         size_t beam_size,
                                                         bool cuda,
                                                         bool qlinear,
-                                                        bool profiling)
+                                                        bool profiling,
+                                                        size_t cache_emblin)
   {
     ITranslator* t = nullptr;
 
@@ -23,7 +24,8 @@ namespace onmt
                                      beam_size,
                                      cuda,
                                      qlinear,
-                                     profiling);
+                                     profiling,
+                                     cache_emblin);
 
     return std::unique_ptr<ITranslator>(t);
   }

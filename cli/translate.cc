@@ -30,6 +30,7 @@ int main(int argc, char* argv[])
     ("time", po::bool_switch()->default_value(false), "output average translation time")
     ("profiler", po::bool_switch()->default_value(false), "output per module computation time")
     ("parallel", po::value<size_t>()->default_value(1), "number of parallel translator")
+    ("cache_emblin", po::value<size_t>()->default_value(0), "if > 0, #vocab to cache")
     ("threads", po::value<size_t>()->default_value(0), "number of threads to use (set to 0 to use the number defined by OpenMP)")
     ("cuda", po::bool_switch()->default_value(false), "use cuda when available")
     ("qlinear", po::bool_switch()->default_value(false), "use quantized linear for speed-up")
@@ -63,7 +64,8 @@ int main(int argc, char* argv[])
                                                               vm["beam_size"].as<size_t>(),
                                                               vm["cuda"].as<bool>(),
                                                               vm["qlinear"].as<bool>(),
-                                                              vm["profiler"].as<bool>()));
+                                                              vm["profiler"].as<bool>(),
+                                                              vm["cache_emblin"].as<size_t>()));
   for (size_t i = 0; i < vm["parallel"].as<size_t>() - 1; ++i) {
     translator_pool.emplace_back(onmt::TranslatorFactory::clone(translator_pool.front()));
   }

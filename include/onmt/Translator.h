@@ -40,7 +40,8 @@ namespace onmt
                size_t beam_size,
                bool cuda,
                bool qlinear,
-               bool profiling);
+               bool profiling,
+               size_t cache_emblin);
     Translator(const Translator& other);
 
     /* profiling - starting first to profile load time */
@@ -54,6 +55,7 @@ namespace onmt
 
     bool _cuda;
     bool _qlinear;
+    size_t _cache_emblin;
 
     bool _replace_unk;
     size_t _max_sent_length;

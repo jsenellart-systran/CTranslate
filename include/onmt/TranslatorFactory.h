@@ -18,7 +18,8 @@ namespace onmt
                                               size_t beam_size = 5,
                                               bool cuda = false,
                                               bool qlinear = false,
-                                              bool profiling = false);
+                                              bool profiling = false,
+                                              size_t cache_emblin = 0);
 
     static std::unique_ptr<ITranslator> clone(const std::unique_ptr<ITranslator>& translator);
   };

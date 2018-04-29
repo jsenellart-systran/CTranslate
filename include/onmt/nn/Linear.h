@@ -82,6 +82,10 @@ namespace onmt
         }
       }
 
+      virtual void set_cache_emblin(size_t)  {
+        throw std::runtime_error("cache emblin not implemented for Linear");
+      }
+
     protected:
       MatIn _weight;
       MatIn _bias;

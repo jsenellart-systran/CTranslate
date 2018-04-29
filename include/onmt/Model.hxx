@@ -118,6 +118,20 @@ namespace onmt
     return 0;
   }
 
+  template <typename MatFwd, typename MatIn, typename ModelT>
+  static void* _set_cache_emblin(nn::Module<MatFwd>* M, void* t)
+  {
+    if (M->get_name() == "nn.Linear") {
+      nn::Linear<MatFwd, MatIn, ModelT>* mL = (nn::Linear<MatFwd, MatIn, ModelT>*)M;
+      mL->set_cache_emblin(*(size_t *)t);
+    }
+    if (M->get_name() == "nn.LookupTable") {
+      nn::LookupTable<MatFwd, MatIn, ModelT>* mL = (nn::LookupTable<MatFwd, MatIn, ModelT>*)M;
+      mL->set_cache_emblin(*(size_t *)t);
+    }
+    return 0;
+  }
+
   template <typename MatFwd, typename MatIn, typename MatEmb, typename ModelT>
   void Model<MatFwd, MatIn, MatEmb, ModelT>::create_graph(
     nn::ModuleFactory<MatFwd, MatIn, MatEmb, ModelT>& factory,
@@ -134,6 +148,13 @@ namespace onmt
       encoder[1]->apply(_mark_block<MatFwd>, (void*)"encoder_bwd");
     decoder[0]->apply(_mark_block<MatFwd>, (void*)"decoder");
     decoder[1]->apply(_mark_block<MatFwd>, (void*)"generator");
+
+    /* enable cache embedding-linear in encoder */
+    if (factory.get_cache_emblin()) {
+      encoder[0]->apply(_set_cache_emblin<MatFwd, MatIn, ModelT>, (void*)(&factory.get_cache_emblin()));
+      if (encoder.size() > 1)
+        encoder[1]->apply(_set_cache_emblin<MatFwd, MatIn, ModelT>, (void*)(&factory.get_cache_emblin()));
+    }
 
     /* find the attention module and annotate it specifically */
     record_graph<MatFwd> rg;
