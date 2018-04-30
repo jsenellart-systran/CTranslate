@@ -42,5 +42,12 @@ namespace onmt
                     int width,
                     const std::vector<size_t> & subdict);
 
+    void QuantizeLookupTable(const float * input,
+                             float * output,
+                             const float * cache,
+                             int max_quant_value,
+                             int num_rows,
+                             int width);
+
   }
 }

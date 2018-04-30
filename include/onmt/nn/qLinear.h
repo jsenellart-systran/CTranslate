@@ -5,7 +5,7 @@
 #include "onmt/th/Obj.h"
 #include "onmt/StorageLoader.h"
 #include "onmt/Utils.h"
-#include "onmt/simd/MatrixMult.h"
+#include "onmt/simd/Operators.h"
 
 namespace onmt
 {

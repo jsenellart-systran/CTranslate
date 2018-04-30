@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "onmt/simd/MatrixMult.h"
+#include "onmt/simd/Operators.h"
 
 #include <cassert>
 
@@ -80,7 +80,7 @@ namespace onmt
         for (int j = 0; j < num_input_chunks; j++)
         {
           const float * x = input_row + j * 8;
-          // Process 8 floats at once, since each __m128i can contain 8 16-bit integers.
+          // Process 2*4 floats at once, since each __m128i can contain 8 16-bit integers.
 
           // Load floats floats into SSE registers.
           __m128 f_0 = _mm_loadu_ps(x);
@@ -312,6 +312,56 @@ namespace onmt
         break;
       }
     }
+
+    void QuantizeLookupTable(const float * input,
+                             float * output,
+                             const float * cache_table,
+                             int max_quant_value,
+                             int num_rows,
+                             int width) {
+        assert(width % 8 == 0);
+        int num_input_chunks = width / 8;
+
+        __m128 sse_quant_mult = _mm_set_ps(quant_mult, quant_mult, quant_mult, quant_mult);
+        
+        for (int i = 0; i < num_rows; i++) {
+            const float * input_row = input + i * width;
+
+            for (int j = 0; j < num_input_chunks; j++) {
+                const float * x = input_row + j * 8;
+                
+                // Load floats into AVX registers.
+                __m128 f_0 = _mm_loadu_ps(x);
+                __m128 f_1 = _mm_loadu_ps(x + 4);
+                
+                // Multiply by quantization factor (e.g., if quant_mult = 1000.0, 0.34221 --> 342.21)
+                __m128 m_0 = _mm_mul_ps(f_0, sse_quant_mult);
+                __m128 m_1 = _mm_mul_ps(f_1, sse_quant_mult);
+                
+                // Cast float to 32-bit int (e.g., 342.21 --> 342)
+                __m128i i_0 = _mm_cvtps_epi32(m_0);
+                __m128i i_1 = _mm_cvtps_epi32(m_1);
+                
+                // Cast 32-bit int to 16-bit int and permute the blocks in order
+                __m128i pack = _mm_packs_epi32(i_0, i_1);
+
+                short p[8];
+                _mm_storeu_si128((__m128i*)p, pack);
+
+                float *output_row = output + i * width + j;
+                for(int h=0; h < 8; h++) {
+                    if (p[h]<=-max_quant_value)
+                        output_row[h] = cache_table[0];
+                    else if (p[h]>=max_quant_value)
+                        output_row[h]= cache_table[2*max_quant_value];
+                    else 
+                        output_row[h] = cache_table[p[i]+max_quant_value];
+                }
+
+            }
+        }
+    }
+
 
   }
 }

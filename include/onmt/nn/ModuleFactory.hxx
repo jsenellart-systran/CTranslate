@@ -33,6 +33,7 @@
 
 #ifdef WITH_QLINEAR
 #  include "onmt/nn/qLinear.h"
+#  include "onmt/nn/qSigmoid.h"
 #endif
 
 namespace onmt
@@ -104,8 +105,14 @@ namespace onmt
         mod = new CAddTable<MatFwd>();
       else if (name == "nn.CMulTable")
         mod = new CMulTable<MatFwd>();
-      else if (name == "nn.Sigmoid")
-        mod = new Sigmoid<MatFwd>();
+      else if (name == "nn.Sigmoid") {
+#ifdef WITH_QLINEAR
+        if (_qlinear)
+          mod = new qSigmoid<MatFwd>();
+        else
+#endif
+          mod = new Sigmoid<MatFwd>();
+      }
       else if (name == "nn.Tanh")
         mod = new Tanh<MatFwd>();
       else if (name == "nn.SplitTable")

@@ -18,11 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "onmt/simd/MatrixMult.h"
+#include "onmt/simd/Operators.h"
 
 #include <cassert>
 
-// This implementation is heavily inspired by reference SSE2 implementation provided
+// This implementation is inspired by reference SSE2 implementation provided
 // as complementary material of paper "Sharp Models on Dull Hardware: Fast and Accurate
 // Neural Machine Translation Decoding on the CPU". The implementation has been extended
 // to support AVX2 instructions set - and to remove constraints on A numbers of row.
@@ -54,7 +54,7 @@ namespace onmt
         for (int j = 0; j < num_input_chunks; j++)
         {
           const float * x = input_row + j * 16;
-          // Process 8 floats at once, since each __m256i can contain 16 16-bit integers.
+          // Process 2*8 floats at once, since each __m256i can contain 16 16-bit integers.
 
           // Load floats into AVX registers.
           __m256 f_0 = _mm256_loadu_ps(x);
@@ -250,6 +250,58 @@ namespace onmt
         break;
       }
     }
+
+
+    void QuantizeLookupTable(const float * input,
+                             float * output,
+                             const float * cache_table,
+                             int max_quant_value,
+                             int num_rows,
+                             int width) {
+        assert(width % 16 == 0);
+        int num_input_chunks = width / 16;
+        __m256i const perm_mask = _mm256_set_epi32(7, 6, 3, 2, 5, 4, 1, 0);
+
+        // Fill an AVX float with 8 copies of the quant mult
+        __m256 sse_quant_mult = _mm256_set_ps(quant_mult, quant_mult, quant_mult, quant_mult, quant_mult, quant_mult, quant_mult, quant_mult);
+
+        for (int i = 0; i < num_rows; i++) {
+            const float * input_row = input + i * width;
+            for (int j = 0; j < num_input_chunks; j++) {
+                const float * x = input_row + j * 16;
+                
+                // Load floats into AVX registers.
+                __m256 f_0 = _mm256_loadu_ps(x);
+                __m256 f_1 = _mm256_loadu_ps(x + 8);
+                
+                // Multiply by quantization factor (e.g., if quant_mult = 1000.0, 0.34221 --> 342.21)
+                __m256 m_0 = _mm256_mul_ps(f_0, sse_quant_mult);
+                __m256 m_1 = _mm256_mul_ps(f_1, sse_quant_mult);
+                
+                // Cast float to 32-bit int (e.g., 342.21 --> 342)
+                __m256i i_0 = _mm256_cvtps_epi32(m_0);
+                __m256i i_1 = _mm256_cvtps_epi32(m_1);
+                
+                // Cast 32-bit int to 16-bit int and permute the blocks in order
+                __m256i pack = _mm256_packs_epi32(i_0, i_1);
+
+                short p[16];
+                _mm256_storeu_si256((__m256i*)p, _mm256_permutevar8x32_epi32(pack, perm_mask));
+
+                float *output_row = output + i * width + j;
+                for(int h=0; h < 16; h++) {
+                    if (p[h]<=-max_quant_value)
+                        output_row[h] = cache_table[0];
+                    else if (p[h]>=max_quant_value)
+                        output_row[h]= cache_table[2*max_quant_value];
+                    else 
+                        output_row[h] = cache_table[p[i]+max_quant_value];
+                }
+
+            }
+        }
+    }
+
 
   }
 }
