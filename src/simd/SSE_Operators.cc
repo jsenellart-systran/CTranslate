@@ -348,14 +348,14 @@ namespace onmt
                 short p[8];
                 _mm_storeu_si128((__m128i*)p, pack);
 
-                float *output_row = output + i * width + j;
+                float *output_row = output + i * width + j * 8;
                 for(int h=0; h < 8; h++) {
                     if (p[h]<=-max_quant_value)
                         output_row[h] = cache_table[0];
                     else if (p[h]>=max_quant_value)
                         output_row[h]= cache_table[2*max_quant_value];
                     else 
-                        output_row[h] = cache_table[p[i]+max_quant_value];
+                        output_row[h] = cache_table[p[h]+max_quant_value];
                 }
 
             }

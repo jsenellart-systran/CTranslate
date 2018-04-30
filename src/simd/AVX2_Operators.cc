@@ -288,14 +288,14 @@ namespace onmt
                 short p[16];
                 _mm256_storeu_si256((__m256i*)p, _mm256_permutevar8x32_epi32(pack, perm_mask));
 
-                float *output_row = output + i * width + j;
+                float *output_row = output + i * width + j * 16;
                 for(int h=0; h < 16; h++) {
-                    if (p[h]<=-max_quant_value)
+                    if (p[h] <= -max_quant_value)
                         output_row[h] = cache_table[0];
-                    else if (p[h]>=max_quant_value)
+                    else if (p[h] >= max_quant_value)
                         output_row[h]= cache_table[2*max_quant_value];
                     else 
-                        output_row[h] = cache_table[p[i]+max_quant_value];
+                        output_row[h] = cache_table[p[h]+max_quant_value];
                 }
 
             }

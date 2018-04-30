@@ -15,11 +15,10 @@ namespace onmt
       qSigmoid()
         : Module<MatFwd>("nn.Sigmoid")
       {
-        _qrange = (int) 2 * simd::quant_mult;
-        _cache_sigmoid = new float(2 * _qrange + 1);
-        for(int i=0; i < 2 * _qrange + 1; i++) {
-          _cache_sigmoid[i] = 1/exp(1 - (i-_qrange)/simd::quant_mult);
-        }
+        _qrange = (int) 10 * simd::quant_mult;
+        _cache_sigmoid = new float[2*_qrange + 1];
+        for(int i=0; i < 2 * _qrange + 1; i++)
+          _cache_sigmoid[i] = 1/(1+exp(-(i-_qrange)/simd::quant_mult));
       }
 
       void forward_impl(const MatFwd& input) override
